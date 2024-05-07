@@ -5,21 +5,21 @@ const Showcase = () => {
 	const [cars, setCars] = useState([]);
 
 
-	const [fetchCars, isFetchingCars, carsError, setCarsError] = useFetching(async () => {
-		let data = await fetch("http://localhost:8080/api/complectations/get", {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-		data = await data.json();
-		console.log(data);
-		setCars(data);
-	});
+	// const [fetchCars, isFetchingCars, carsError, setCarsError] = useFetching(async () => {
+	// 	let data = await fetch("http://localhost:8080/api/complectations/get", {
+	// 		method: 'GET',
+	// 		headers: {
+	// 			'Content-Type': 'application/json',
+	// 		},
+	// 	});
+	// 	data = await data.json();
+	// 	console.log(data);
+	// 	setCars(data);
+	// });
 
-	useEffect(() => {
-		fetchCars();
-	}, []);
+	// useEffect(() => {
+	// 	fetchCars();
+	// }, []);
 
 
 

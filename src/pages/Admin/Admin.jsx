@@ -5,7 +5,7 @@ import { servURLContext } from '../../context';
 import schemas from './schemas';
 
 const Admin = () => {
-	const [currentCar, setCurrentCar] = useState(schemas.car);
+	const [currentCar, setCurrentCar] = useState();
 	const { servURL } = useContext(servURLContext);
 
 	const [fetchDocument, isFetching, fetchError, setFetchError] = useFetching(async (endpoint, stateSetter) => {
@@ -29,7 +29,7 @@ const Admin = () => {
 	return (
 		<div className="size-full relative">
 			<h2 className="">Admin</h2>
-			<Configurator currentCar={currentCar} setCurrentCar={setCurrentCar} adminMode={true} />
+			{currentCar && <Configurator currentCar={currentCar} setCurrentCar={setCurrentCar} adminMode={true} />}
 		</div>
 	);
 };

@@ -39,6 +39,18 @@ const dictionary = {
 		en: "Required",
 		ua: "Необхідне"
 	},
+	front: {
+		en: "Front",
+		ua: "Спереду"
+	},
+	rear: {
+		en: "Rear",
+		ua: "Ззаду"
+	},
+	mid: {
+		en: "Mid",
+		ua: "Посередині"
+	},
 }
 
 export default dictionary;

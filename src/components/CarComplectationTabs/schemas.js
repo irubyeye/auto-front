@@ -8,9 +8,25 @@ const schemas = {
 		},
 		maxSpeed: 0,
 		acceleration: 0,
-		engine: "",
-		transmission: "",
-		suspension: "",
+		engine: {
+			availableFor: [],
+			manufacturer: "",
+			model: "",
+			volume: 0,
+			hp: 0,
+			torque: 0,
+			turbo: false,
+		},
+		transmission: {
+			availableFor: [],
+			type: "",
+			drive: "",
+			gears: 0,
+		},
+		suspension: {
+			availableFor: [],
+			type: ""
+		},
 	},
 	engine: {
 		availableFor: [],

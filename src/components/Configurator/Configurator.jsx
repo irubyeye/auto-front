@@ -33,7 +33,8 @@ const Configurator = ({ currentCar, setCurrentCar, adminMode }) => {
 	return (
 		<div className="py-4 bg-slate-300 dark:bg-zinc-700 border-2 border-solid border-slate-400 rounded-xl">
 			<CarPanel adminMode={adminMode} currentCar={currentCar} setCurrentCar={setCurrentCar} />
-			<CarComplectationTabs adminMode={adminMode} currentCar={currentCar} setCurrentCar={setCurrentCar} cars={cars} setCars={setCars} />
+			{currentCar._id && <CarComplectationTabs adminMode={adminMode} currentCar={currentCar} setCurrentCar={setCurrentCar} cars={cars} setCars={setCars} />}
+			{/* <CarFeaturesBlock /> */}
 			{/* adminMode && <AdminExtensions /> */}
 		</div>
 	);
