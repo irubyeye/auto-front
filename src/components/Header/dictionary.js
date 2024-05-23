@@ -14,7 +14,39 @@ const lang = {
 	language: {
 		en: "language",
 		ua: "мова"
-	}
+	},
+	registration: {
+		en: "Registration",
+		ua: "Реєстрація"
+	},
+	login: {
+		en: "Log in",
+		ua: "Увійти"
+	},
+	username: {
+		en: "Username",
+		ua: "Ім'я користувача"
+	},
+	password: {
+		en: "Password",
+		ua: "Пароль"
+	},
+	passwordVerify: {
+		en: "Repeat password",
+		ua: "Повторіть пароль"
+	},
+	passMatchError: {
+		en: "Passwords don't match",
+		ua: "Паролі не співпадають"
+	},
+	submit: {
+		en: "Submit",
+		ua: "Підтвердити"
+	},
+	// username: {
+	// 	en: "",
+	// 	ua: ""
+	// },
 }
 
 export default lang;

@@ -48,8 +48,8 @@ const dictionary = {
 		ua: "Назва"
 	},
 	description: {
-		en: "Description (UA, Eng)",
-		ua: "Опис (UA, Eng)"
+		en: "Description",
+		ua: "Опис"
 	},
 	engine: {
 		en: "Engine",
@@ -155,6 +155,10 @@ const dictionary = {
 		en: "Colors",
 		ua: "Кольори"
 	},
+	complectInstruction: {
+		en: "Complectations: ",
+		ua: "Комплектації: "
+	}
 }
 
 export default dictionary;

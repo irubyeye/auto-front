@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Target scrollbar for Chrome, Safari and Opera */
+.custom-scrollbar::-webkit-scrollbar {
+	width: 8px;
+	/* Adjust width as needed */
+	background: #e3e3e3;
+	/* Set background color */
+}
+
+/* Target scrollbar for Firefox and Edge */
+.custom-scrollbar {
+	scrollbar-width: thin;
+	/* Set scrollbar width */
+	scrollbar-color: #e0e0e0 #959595;
+	/* Set track and thumb color */
+}
+
+.scrollbar-none::-webkit-scrollbar {
+	display: none;
+}
+
+.scrollbar-none {
+	scrollbar-width: none;
+}

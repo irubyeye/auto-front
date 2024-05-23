@@ -1,35 +1,22 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useFetching } from '../../hooks/useFetching';
 import Configurator from '../../components/Configurator/Configurator';
-import { servURLContext } from '../../context';
-import schemas from './schemas';
+import CarSlides from '../../components/CarSlides/CarSlides';
 
-const Admin = () => {
-	const [currentCar, setCurrentCar] = useState();
-	const { servURL } = useContext(servURLContext);
-
-	const [fetchDocument, isFetching, fetchError, setFetchError] = useFetching(async (endpoint, stateSetter) => {
-		let data = await fetch(servURL + endpoint, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-		data = await data.json();
-		console.log(data[0]);
-		stateSetter(data[0]);
-	});
-
-	useEffect(() => {
-		fetchDocument("models/:id?id=66321d2a7291952489119f52", setCurrentCar);
-	}, []);
-
-
+const Admin = ({ currentCar, setCurrentCar, brandModels, setBrandModels }) => {
 
 	return (
 		<div className="size-full relative">
-			<h2 className="">Admin</h2>
-			{currentCar && <Configurator currentCar={currentCar} setCurrentCar={setCurrentCar} adminMode={true} />}
+			<h2 className="dark:text-orange-400">Admin</h2>
+			{brandModels && <CarSlides
+				setCurrentCar={setCurrentCar}
+				brandModels={brandModels}
+				setBrandModels={setBrandModels} />}
+			{currentCar && <Configurator
+				currentCar={currentCar}
+				setCurrentCar={setCurrentCar}
+				brandModels={brandModels}
+				setBrandModels={setBrandModels}
+				adminMode={true} />}
 		</div>
 	);
 };

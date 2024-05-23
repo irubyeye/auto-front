@@ -1,4 +1,12 @@
 const dictionary = {
+	purchase: {
+		en: "Purchase",
+		ua: "Замовити"
+	},
+	configure: {
+		en: "Configure",
+		ua: "Конфігурувати"
+	},
 	origin: {
 		en: "Origin",
 		ua: "Країна походження"
@@ -41,16 +49,24 @@ const dictionary = {
 	},
 	front: {
 		en: "Front",
-		ua: "Спереду"
+		ua: "Переднє"
 	},
 	rear: {
 		en: "Rear",
-		ua: "Ззаду"
+		ua: "Заднє"
 	},
 	mid: {
 		en: "Mid",
-		ua: "Посередині"
+		ua: "Середнє"
 	},
+	edit: {
+		en: "Edit",
+		ua: "Редагувати"
+	},
+	appearance: {
+		en: "Appearance",
+		ua: "Зовнішній вигляд"
+	}
 }
 
 export default dictionary;

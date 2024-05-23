@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ImageSlider = (props) => {
-	const { images, className } = props;
-	const [slides, setSlides] = useState([1, 2, 3,]);
+const ImageSlider = ({ slides, className }) => {
 	const swiperRef = useRef(null);
 
 	useEffect(() => {
@@ -16,31 +14,16 @@ const ImageSlider = (props) => {
 		swiperRef.current.initialize();
 	}, []);
 
-	const renderSlides = () => {
-		if (!slides.length) {
-			return (
-				<swiper-slide>
-					<div className="min-w-60 min-h-36 p-4 bg-gray-200"></div>
-				</swiper-slide>
-			)
-		}
-
-		return (
-			slides.map((el, index) => {
-				return (
-					<swiper-slide key={index}>
-						<p className=''>asdad</p>
-						{/* <img className='' src={el.src} alt={el.label} loading='lazy' /> */}
-					</swiper-slide>
-				)
-			})
-		)
-	}
-
 	return (
-		<div className={`overflow-hidden relative	${className}`}>
+		<div className={`overflow-hidden relative ${className}`}>
 			<swiper-container init="false" ref={swiperRef}>
-				{renderSlides()}
+				{slides?.map((slide, index) => {
+					return (
+						<swiper-slide key={index}>
+							<img className='object-contain w-full max-h-96 sm:min-h-80' src={slide} loading='lazy' />
+						</swiper-slide>
+					)
+				})}
 			</swiper-container>
 		</div>
 	);

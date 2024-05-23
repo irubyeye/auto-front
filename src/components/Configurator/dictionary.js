@@ -1,19 +1,15 @@
 const dictionary = {
-	choose: {
-		en: "Choose",
-		ua: "Обрати"
+	colorLabel: {
+		en: "New color:",
+		ua: "Новий колір:"
 	},
-	brand: {
-		en: "Brand",
-		ua: "Марка"
+	srcset: {
+		en: "Enter picture URL's separated by comma",
+		ua: "Введіть посилання на зображення через кому"
 	},
-	body: {
-		en: "Body",
-		ua: "Кузов"
-	},
-	modelYear: {
-		en: "Model Year",
-		ua: "Модельний рік"
+	color: {
+		en: "Color",
+		ua: "Колір"
 	},
 }
 
