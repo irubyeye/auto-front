@@ -16,8 +16,8 @@ const dictionary = {
 		ua: "Рік"
 	},
 	noOrders: {
-		en: "You dont have any orders",
-		ua: "У вас немає замовлень"
+		en: "No orders here...",
+		ua: "Замовлень немає..."
 	},
 	status: {
 		en: "Status",
@@ -134,6 +134,10 @@ const dictionary = {
 	color: {
 		en: "Color",
 		ua: "Колір"
+	},
+	delete: {
+		en: "Delete",
+		ua: "Видалити"
 	},
 };
 

@@ -43,5 +43,13 @@ export const dictionary = {
 	noComplectOrAppearance: {
 		en: "There may be no available configurations or appearances for this model",
 		ua: "Можливо, для даної моделі немає доступних компплектацій або зовнішніх виглядів"
+	},
+	userPhone: {
+		en: "Phone number",
+		ua: "Мобільний номер"
+	},
+	contacts: {
+		en: "Contacts for order confirmation",
+		ua: "Контакти для підтвердження замовлення"
 	}
 };

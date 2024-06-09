@@ -10,6 +10,7 @@ import { Cross1Icon } from '@radix-ui/react-icons';
 import Button from '../../UI/Button';
 import ImageSlider from '../../components/ImageSlider/ImageSlider';
 import schemas from '../../utils/schemas';
+import Input from '../../UI/Input';
 
 const Mainpage = () => {
 	const [accessories, setAccessories] = useState([]);
@@ -81,7 +82,9 @@ const Mainpage = () => {
 				setAccessories(accessories);
 			}
 			const newOrder = {
-				client: user._id,
+				client: {
+					id: user._id,
+				},
 				car: {
 					_id,
 					img: currentCar.img.find(entry => entry.color === selectedColor),
@@ -143,16 +146,24 @@ const Mainpage = () => {
 		})
 	}
 
-	const confirmOrder = async () => {
-		setOrderConfirmation(false);
-		setToast({ title: dictionary.complete[language] });
-		const response = await pushDocument(order, 'orders/create', 'POST');
-		if (response.errors) return setToast(response.errors);
+	const confirmOrder = async event => {
+		const contactsContainer = event.target.previousElementSibling;
+		const contacts = {
+			email: contactsContainer.querySelector('#user-email').value,
+			phone: contactsContainer.querySelector('#user-phone').value,
+		};
+		const orderComplete = { ...order };
+		orderComplete.client.contacts = contacts;
+		const response = await pushDocument(orderComplete, 'orders/create', 'POST');
+		if (response.errors) return setToast({ title: response.message, description: response.errors.errors[0].msg });
 		const userUpd = { ...user };
 		userUpd.orders.push(response);
+		userUpd.contacts = contacts;
 		const userUpdResult = await pushDocument(userUpd, 'users/update', 'PATCH');
 		if (userUpdResult.errors) return setPushError(userUpdResult.errors);
 		setUser(userUpd);
+		setOrderConfirmation(false);
+		setToast({ title: dictionary.complete[language] });
 	}
 
 	return (
@@ -205,7 +216,14 @@ const Mainpage = () => {
 							})}
 						</div>
 						<span className=" block text-slate-600 dark:text-orange-400">total: {order?.totalPrice}</span>
-						<Button callback={confirmOrder}>{dictionary.confirm[language]}</Button>
+						<fieldset className='my-3 dark:text-orange-400'>
+							<p>{dictionary.contacts[language]}</p>
+							<label htmlFor="user-email">E-mail</label>
+							<Input id="user-email" type="tel" defaultValue={user.contacts?.email} />
+							<label htmlFor="user-phone">{dictionary.userPhone[language]}</label>
+							<Input id="user-phone" type="tel" defaultValue={user.contacts?.phone} />
+						</fieldset>
+						<Button callback={event => confirmOrder(event)}>{dictionary.confirm[language]}</Button>
 					</Dialog.Content>
 				</Dialog.Portal>
 			</Dialog.Root>}
