@@ -6,23 +6,23 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon, HamburgerMenuIcon } from '@r
 import { useFetching } from '../../hooks/useFetching';
 import ImageSlider from '../../components/ImageSlider/ImageSlider';
 import Input from '../../UI/Input';
-import { LangContext, PageNavContext, UserContext, servURLContext } from '../../context';
+import { LangContext, PageNavContext, UserContext, servURLContext, userAuthContext } from '../../context';
 import schemas from '../../utils/schemas';
 import dictionary from './dictionary';
 import Button from '../../UI/Button';
 import Admin from '../../pages/Admin/Admin';
 
-const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandModels, setSelectedBrand, isConfiguring, setIsConfiguring, appearanceMode, setAppearanceMode }) => {
+const CarPanel = ({ adminMode, currentCar, setCurrentCar, selectedColor, setSelectedColor, brandModels, setBrandModels, setSelectedBrand, setIsConfiguring, setAppearanceMode, createOrder }) => {
 	const { setCurrentPage } = useContext(PageNavContext);
 	const { language } = useContext(LangContext);
 	const { servURL } = useContext(servURLContext);
 	const { user } = useContext(UserContext);
-	const [selectedColor, setSelectedColor] = useState();
+	const { setIsAuthDialogOpen } = useContext(userAuthContext);
 	const [isPanelOpen, setIsPanelOpen] = useState(window.matchMedia("(min-width: 768px)").matches);
 
 	// select color on load
 	useEffect(() => {
-		if (currentCar.img.length) setSelectedColor(Object.values(currentCar.img[0])[0]);
+		if (currentCar.img.length) setSelectedColor(currentCar.img[0].color);
 	}, [currentCar.img]);
 
 	const SelectItem = React.forwardRef(({ children, className, ...props }, forwardedRef) => {
@@ -55,9 +55,7 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 							<Select.Label className="px-6 text-gray-600 dark:text-zinc-400 dark:font-semibold">{dictionary[name][language]}</Select.Label>
 							<Select.Separator className="h-px bg-violet-500 m-1" />
 							{items?.map((item, itemIndex) => {
-								if (name !== "optionPacks") {
-									return <SelectItem value={item} key={`car-body-${item}`}>{item}</SelectItem>
-								}
+								return <SelectItem value={item} key={`car-body-${item}`}>{item}</SelectItem>
 							})}
 						</Select.Group>
 					</Select.Viewport>
@@ -69,7 +67,7 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 		</Select.Root>
 	})
 
-	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {
@@ -79,6 +77,17 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 		})
 		res = await res.json();
 		return res;
+	});
+
+	const [fetchDocument] = useFetching(async (endpoint) => {
+		let data = await fetch(servURL + endpoint, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		data = await data.json();
+		return data;
 	});
 
 	const toggleEditMode = mode => {
@@ -92,23 +101,62 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 	}
 
 	const pushCar = async (endpoint, method) => {
-		const res = await pushDocument(currentCar, endpoint, method);
-		if (res.errors) return setPushError(res.errors.errors.map(e => e.msg).join(', '))
+		setAppearanceMode(false);
+		setIsConfiguring(false);
+		if (pushError) setPushError(null);
+
+		const carToPush = { ...currentCar };
+
+		if (method !== "DELETE" && carToPush.complectations) {
+			carToPush.complectations = carToPush.complectations?.map(complect => {
+				if (typeof complect === 'string') return complect;
+				if (!complect?._id) return;
+				return complect = complect._id;
+			});
+		}
+
+		const res = await pushDocument(carToPush, endpoint, method);
+		if (res.errors) return setPushError(`${res.message} ${res?.errors?.errors?.map(e => e?.msg)?.join(', ')}`);
+		if (method === 'POST') {
+			setBrandModels(prev => ([...prev, res]));
+			return setCurrentCar(res);
+		}
+		const targetIndex = brandModels.findIndex(car => car._id === carToPush._id);
 		if (method === 'DELETE') {
-			// setBrandModels(prev => prev.splice(targetIndex))
+			if (targetIndex >= 0) {
+				const tmp = [...brandModels];
+				tmp.splice(targetIndex, 1);
+				setBrandModels(tmp);
+				if (tmp.length) {
+					const car = await fetchDocument(`models/getOne?id=${brandModels[0]._id}`);
+					setCurrentCar(car[0]);
+				}
+				return;
+			}
 			return setCurrentCar(schemas.car);
 		}
-		if (method === 'POST') return setCurrentCar(res);
+
+		if (method === 'PATCH' && targetIndex >= 0) return setBrandModels(prev => {
+			const tmp = [...prev];
+			if (carToPush.model !== tmp[targetIndex].model) tmp[targetIndex].model = carToPush.model;
+			if (carToPush.img.length && !brandModels[targetIndex].img.length) tmp[targetIndex].img = carToPush.img;
+			return tmp;
+		})
+	}
+
+	const handlePurchase = () => {
+		if (!user || !user._id) return setIsAuthDialogOpen(true);
+		createOrder();
 	}
 
 	return (
 		<div className={`px-4 relative ${adminMode && "min-h-96"} overflow-hidden dark:text-slate-300 dark:font-semibold`}>
-			<ImageSlider slides={currentCar.img.find(item => item.color === selectedColor)?.srcset} className="" />
-			<div className={`h-full w-full z-10 overflow-y-auto scrollbar-none sm:absolute sm:top-0 sm:right-0 duration-200 ${isPanelOpen ? "translate-x-0" : "hidden sm:block sm:translate-x-full"} sm:w-1/2 md:w-2/5 lg:w-2/6 bg-zinc-700/65 pr-4`}>
+			<ImageSlider slides={currentCar.img?.find(item => item.color.en === selectedColor?.en)?.srcset} data-isopen={isPanelOpen} className={`duration-150 ${isPanelOpen ? "sm:translate-x-[-15%] lg:translate-x-[-17%]" : null}`} slideStyles={`max-h-96 duration-200 sm:min-h-80 ${isPanelOpen ? "sm:scale-75 lg:scale-100" : null}`} />
+			<div className={`pt-3 h-full w-full z-10 overflow-y-auto overflow-x-hidden scrollbar-none sm:absolute sm:top-0 sm:pt-9 sm:right-0 duration-200 ${isPanelOpen ? "translate-x-0 sm:mr-3" : "hidden sm:block sm:translate-x-full"} sm:w-3/12 lg:w-2/6 bg-zinc-700/65 pr-4`}>
 				<Form.Root className='flex flex-col gap-2 pl-2 md:gap-0'>
 					{/* fields for filtered properties */}
 					{Object.entries(currentCar)
-						.filter(([key, value]) => key !== "complectations" && key !== "_id" && key !== "__v" && key !== "interior" && key !== "exterior" && key !== "optionPacks")
+						.filter(([key, value]) => key !== "complectations" && key !== "_id" && key !== "__v" && key !== "interior" && key !== "exterior")
 						.map(([key, value], index) => {
 							switch (key) {
 								case "brand":
@@ -118,7 +166,10 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 										value={currentCar.brand}
 										name={key}
 										selectHandler={value => {
-											setCurrentCar(prev => ({ ...prev, brand: value }));
+											setPushError(false);
+											setIsConfiguring(false);
+											setAppearanceMode(false);
+											setCurrentCar({ ...schemas.car, brand: value });
 											setSelectedBrand(value);
 										}}
 										items={schemas.brands}
@@ -130,17 +181,23 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 										disabled={!adminMode}
 										value={currentCar.body}
 										name={key}
-										selectHandler={value => setCurrentCar(prev => ({ ...prev, body: value }))}
+										selectHandler={value => {
+											setPushError(false);
+											setCurrentCar(prev => ({ ...prev, body: value }));
+										}}
 										items={schemas.bodyTypes}
 										key={`car-panel-body-select`}
 									/>
 
 								case "engineDisplacement":
-									return <div className='flex w-full order-4' key={"car-panel-" + key}>
+									return <div className='flex w-full order-4 sm:flex-col md:flex-row' key={"car-panel-" + key}>
 										{adminMode ?
 											<RadioGroup.Root
 												disabled={!adminMode}
-												onValueChange={value => setCurrentCar(prev => { return { ...prev, engineDisplacement: value } })}
+												onValueChange={value => {
+													setPushError(false);
+													setCurrentCar(prev => { return { ...prev, engineDisplacement: value } });
+												}}
 												className="flex py-2 flex-col flex-wrap gap-4 sm:flex-row sm:justify-around"
 												value={currentCar.engineDisplacement}
 												aria-label="Engine displacement"
@@ -185,25 +242,25 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 								case "img":
 									if (currentCar.img.length) return <MySelect
 										className="order-3"
-										value={selectedColor}
+										value={currentCar.img.find(item => item.color.en === selectedColor?.en)?.color[language] || currentCar.img[0].color[language]}
 										name="color"
-										selectHandler={value => setSelectedColor(value)}
-										/* берем названия цветов из соответствующих полей картинок */
-										items={Object.values(currentCar.img).map(set => set.color)}
+										selectHandler={value => setSelectedColor(currentCar.img.find(item => item.color[language] === value).color)}
+										/* берем названия цветов из соответствующих полей в картинках */
+										items={Object.values(currentCar.img).map(set => set.color[language])}
 										key={`car-panel-color-select`}
 									/>
-									break;
+									return null;
 
-								default: return <Form.Field className='flex w-full order-last' name={"car-" + key} key={"car-panel" + key}>
+								default: return <Form.Field className='flex w-full order-last sm:flex-col md:flex-row' name={"car-" + key} key={"car-panel" + key}>
 									<Form.Label className='text-slate-400 dark:text-zinc-400'>{`${dictionary[key][language]}:`}</Form.Label>
 									<Form.Control asChild>
-										<Input className={`w-24 !bg-transparent !border-0 text-slate-200 sm:w-28`} callback={event => setCurrentCar(prev => ({ ...prev, [key]: +event.target.value || event.target.value }))} type={typeof value} value={value} disabled={!adminMode} />
+										<Input className={`md:ml-2 w-24 !bg-transparent ${!adminMode && "!border-0"} text-slate-200 sm:w-28`} callback={event => { setCurrentCar(prev => ({ ...prev, [key]: +event.target.value || event.target.value })); setPushError(false); }} type={typeof value} value={value} disabled={!adminMode} />
 									</Form.Control>
 									<Form.Message match="valueMissing">{dictionary.required[language]}</Form.Message>
 								</Form.Field>
 							}
 						})}
-
+					{/* buttons */}
 					<div className='flex flex-wrap py-2 gap-2 order-last'>
 						<span className='text-red-600'>{pushError}</span>
 						{/* CRUD btns for admin panel */}
@@ -212,8 +269,10 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandM
 						{adminMode && <Button callback={() => pushCar("models/delete", 'DELETE')}>Delete</Button>}
 
 						{/* btns for mainpage */}
-						{(!adminMode && user.roles.some(role => role === "admin")) && <Button callback={() => setCurrentPage(<Admin currentCar={currentCar} setCurrentCar={setCurrentCar} brandModels={brandModels} setBrandModels={setBrandModels} />)}>{dictionary.edit[language]}</Button>}
-						{(!adminMode && !user.roles.some(role => role === "admin")) && <Button /* callback={} */>{dictionary.purchase[language]}</Button>}
+						{(!adminMode && user.roles.some(role => role === "admin")) &&
+							<Button callback={() => setCurrentPage(<Admin providedCar={currentCar} providedModels={brandModels} />)}>{dictionary.edit[language]}</Button>}
+						{(!adminMode && !user.roles.some(role => role === "admin")) &&
+							<Button callback={handlePurchase}>{dictionary.purchase[language]}</Button>}
 
 						{/* show appearanse editor / configurator */}
 						{currentCar._id && <Button callback={() => toggleEditMode("complect")}>{dictionary.configure[language]}</Button>}

@@ -1,5 +1,5 @@
 const schemas = {
-	bodyTypes: ["sedan", "universal", "hatchback", "coupe", "minivan", "buggy", "convertible/cabriolet", "fastback", "limousine", "roadster", "shooting-brake", "targa-top", "pickup"],
+	bodyTypes: ["sedan", "universal", "hatchback", "coupe", "minivan", "buggy", "convertible/cabriolet", "fastback", "limousine", "roadster", "shooting-brake", "targa-top", "pickup", "muscle car", "SUV"],
 	brands: ["Chevrolet", "Ford", "Dodge", "Infiniti", "Tesla", "Ferrari", "Lamborghini", "Alfa Romeo", "Fiat", "Maserati", "BMW", "Mercedes", "Volkswagen", "Audi", "Porsche", "Jaguar", "Aston Martin", "McLaren", "Renault", "Citroen", "Toyote", "Nissan", "Honda", "Mazda", "Subaru", "Mitsubishi", "Lexus", "Suzuki", "Hyundai",],
 	car: {
 		img: [],
@@ -10,7 +10,6 @@ const schemas = {
 		engineDisplacement: "rear",
 		modelYear: 0,
 		basePrice: 0,
-		optionPacks: [],
 	},
 	complectation: {
 		baseModel: [],
@@ -29,36 +28,20 @@ const schemas = {
 			hp: 0,
 			torque: 0,
 			turbo: false,
+			price: 0,
 		},
 		transmission: {
 			availableFor: [],
 			type: "",
 			drive: "",
 			gears: 0,
+			price: 0,
 		},
 		suspension: {
 			availableFor: [],
-			type: ""
+			type: "",
+			price: 0,
 		},
-	},
-	engine: {
-		availableFor: [],
-		manufacturer: "",
-		model: "",
-		volume: 0,
-		hp: 0,
-		torque: 0,
-		turbo: false,
-	},
-	transmission: {
-		availableFor: [],
-		type: "",
-		drive: "",
-		gears: 0,
-	},
-	suspension: {
-		availableFor: [],
-		type: ""
 	},
 	interior: {
 		trim: "",
@@ -71,7 +54,7 @@ const schemas = {
 		wheels: "",
 		features: []
 	},
-	interiorItem: {
+	appearanceItem: {
 		availableFor: [],
 		type: "",
 		value: {

@@ -3,14 +3,12 @@ import { Cross1Icon, QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import * as Separator from '@radix-ui/react-separator';
 import * as HoverCard from '@radix-ui/react-hover-card';
 import Regions from './Regions';
-import { servURLContext, LangContext } from '../../context';
+import { LangContext } from '../../context';
 import { dictionary } from './dictionary';
 
 
 const BrandMap = ({ setSelectedBrand }) => {
 	const [selectedRegion, setSelectedRegion] = useState(null);
-	const queryParams = { skip: 0, limit: 4 };
-	const { servURL } = useContext(servURLContext);
 	const { language } = useContext(LangContext);
 	const rectangles = [];
 
@@ -53,7 +51,7 @@ const BrandMap = ({ setSelectedBrand }) => {
 				rectangles.push(rectangle);
 			});
 		} catch (error) {
-			console.log(error);
+			console.log(error.toString());
 		}
 
 		return rectangles.forEach(rectangle => rectangle.removeEventListener("click", () => setSelectedRegion()));
@@ -65,7 +63,6 @@ const BrandMap = ({ setSelectedBrand }) => {
 
 	return (
 		<div className='relative h-52 sm:h-60 md:h-80 lg:h-96'>
-			{/* <h2 className='text-lg text-slate-800 dark:text-orange-400'>{dictionary.instruction[language]}</h2> */}
 			{/* map container */}
 			<div id='map' className='h-full border-2 border-slate-400 rounded shadow-2xl z-0'></div>
 			<HoverCard.Root>

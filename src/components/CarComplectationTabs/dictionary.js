@@ -79,10 +79,6 @@ const dictionary = {
 		en: "Interior",
 		ua: "Інтер'єр"
 	},
-	options: {
-		en: "Features",
-		ua: "Додаткові опції"
-	},
 	required: {
 		en: "Required",
 		ua: "Необхідне"
@@ -158,7 +154,15 @@ const dictionary = {
 	complectInstruction: {
 		en: "Complectations: ",
 		ua: "Комплектації: "
-	}
+	},
+	save: {
+		en: "Save",
+		ua: "Зберегти"
+	},
+	userComplectName: {
+		en: "Enter complect name",
+		ua: "Введіть назву"
+	},
 }
 
 export default dictionary;

@@ -1,30 +1,23 @@
-import React, { forwardRef, useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import * as Select from '@radix-ui/react-select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { useFetching } from '../../hooks/useFetching';
-import { PageNavContext, servURLContext, LangContext } from '../../context';
+import { servURLContext, LangContext } from '../../context';
 import CarPanel from '../CarPanel/CarPanel';
 import CarComplectationTabs from '../CarComplectationTabs/CarComplectationTabs';
-import CarSlides from '../CarSlides/CarSlides';
 import AppearanceEditor from '../AppearanceEditor/AppearanceEditor';
-import schemas from '../../utils/schemas';
 import Input from '../../UI/Input';
 import dictionary from './dictionary';
 import Button from '../../UI/Button';
 
-const Configurator = ({ currentCar, setCurrentCar, brandModels, setBrandModels, adminMode }) => {
-	// const [currentCar, setCurrentCar] = useState(providedCar/*  || schemas.car */);
-	// const [selectedBrand, setSelectedBrand] = useState(providedBrand);
-	// const [brandModels, setBrandModels] = useState(null);
-	const [appearanceColors, setAppearanceColors] = useState({ trim: "", seatings: "", wheels: "", });
-	const [selectedColor, setSelectedColor] = useState(null);
+const Configurator = ({ currentCar, setCurrentCar, selectedColor, setSelectedColor, brandModels, setBrandModels, setSelectedBrand, selectedComplectIndex, setSelectedComplectIndex, appearanceColors, setAppearanceColors, createOrder, adminMode }) => {
 	const [isConfiguring, setIsConfiguring] = useState(false);
 	const [appearanceMode, setAppearanceMode] = useState(false);
 	const { servURL } = useContext(servURLContext);
 	const { language } = useContext(LangContext);
 	const colorField = useRef(null);
 
-	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {
@@ -35,32 +28,6 @@ const Configurator = ({ currentCar, setCurrentCar, brandModels, setBrandModels, 
 		res = await res.json();
 		return res;
 	});
-
-	// const [fetchDocument, isFetching, fetchError, setFetchError] = useFetching(async (endpoint) => {
-	// 	let data = await fetch(servURL + endpoint, {
-	// 		method: 'GET',
-	// 		headers: {
-	// 			'Content-Type': 'application/json',
-	// 		},
-	// 	});
-	// 	data = await data.json();
-	// 	return data;
-	// });
-
-	// // загрузка машин
-	// useEffect(() => {
-	// 	const handleBrandModels = async () => {
-	// 		const data = await fetchDocument(`models/getMany?brand=${selectedBrand}&skip=0&limit=4`);
-	// 		setBrandModels(data);
-	// 		// if (!currentCar.brand.length) setCurrentCar(data[0] || schemas.car);
-	// 	}
-	// 	if (selectedBrand) handleBrandModels();
-	// }, [selectedBrand]);
-
-	// // выбор цвета после загрузки
-	// useEffect(() => {
-	// 	if (currentCar?.img?.length) setSelectedColor(currentCar.img[0].color);
-	// }, [currentCar?.img]);
 
 	const SelectItem = React.forwardRef(({ children, className, ...props }, forwardedRef) => {
 		return (
@@ -103,18 +70,18 @@ const Configurator = ({ currentCar, setCurrentCar, brandModels, setBrandModels, 
 	})
 
 	const AdminExtensions = () => {
-		return <div className='p-4'>
+		return <div className='p-4 mt-2'>
 			{/* colors block */}
 			<div ref={colorField}>
 				<MySelect
-					value={selectedColor}
+					value={currentCar.img.find(item => item?.color?.en === selectedColor?.en)?.color[language] || currentCar.img[0]?.color[language]}
 					name="color"
-					selectHandler={value => setSelectedColor(value)}
-					items={Object.values(currentCar.img).map(colors => colors.color)}
+					selectHandler={value => setSelectedColor(currentCar.img.find(item => item.color[language] === value).color)}
+					items={Object.values(currentCar.img).map(colors => colors.color[language])}
 				/>
 				<fieldset className=''>
 					<label className='text-slate-600 dark:text-orange-400' htmlFor="color">{dictionary.colorLabel[language]}</label>
-					<Input className="ml-2 md:w-44" id="color" />
+					<Input className="ml-2 md:w-44" id="color" placeholder="color/колір" />
 				</fieldset>
 				<fieldset className='text-slate-600 dark:text-orange-400'>
 					<label htmlFor="srcset">{dictionary.srcset[language]}</label>
@@ -124,24 +91,30 @@ const Configurator = ({ currentCar, setCurrentCar, brandModels, setBrandModels, 
 				<div className='flex mt-2 gap-4'>
 					<Button callback={async () => {
 						if (pushError) setPushError(null);
-						const newColorName = colorField.current.querySelector('#color').value;
+						const [newColorEN, newColorUA] = colorField.current.querySelector('#color').value.split('/');
 						const srcset = colorField.current.querySelector('#srcset').value.split(", ");
-						const newColor = { color: newColorName, srcset: srcset }
+						const newColor = { color: { en: newColorEN, ua: newColorUA }, srcset: srcset }
 						const res = await pushDocument({ _id: currentCar._id, img: newColor }, `models/addColor`, 'PATCH');
 						if (res.errors) return setPushError(res.errors.errors[0]);
 						if (res.message) return setPushError(res.message);
-						const tmp = [...currentCar.img, newColor];
-						setCurrentCar(prev => ({ ...prev, img: tmp }));
-						setBrandModels(prev => {
-							const tmp = [...prev];
-							const targetIndex = tmp.find(model => model._id === currentCar?._id);
-							tmp[targetIndex].img.push(newColor);
+						const outdatedModelIndex = brandModels.findIndex(model => model._id === currentCar._id);
+						if (!currentCar.img.length) setBrandModels(prev => {
+							const tmpModels = [...prev];
+							tmpModels[outdatedModelIndex].img = [newColor];
+							return tmpModels;
+						});
+						setCurrentCar(prev => {
+							if (!prev.img) {
+								return { ...prev, img: [newColor] }
+							} else {
+								return { ...prev, img: [...prev.img, newColor] }
+							}
 						})
 					}}>Add</Button>
 
 					<Button callback={async () => {
 						const tmp = [...currentCar.img];
-						const targetIndex = tmp.findIndex(item => item.color === selectedColor);
+						const targetIndex = tmp.findIndex(item => item.color.en === selectedColor.en);
 						tmp.splice(targetIndex, 1);
 						setCurrentCar(prev => ({ ...prev, img: tmp }));
 
@@ -154,40 +127,39 @@ const Configurator = ({ currentCar, setCurrentCar, brandModels, setBrandModels, 
 
 	return (
 		<div className="py-4 bg-slate-300 dark:bg-zinc-700 border-2 border-solid border-slate-400 rounded-xl">
-			{/* {brandModels &&
-				<CarSlides
-					setCurrentCar={setCurrentCar}
-					brandModels={brandModels}
-					setBrandModels={setBrandModels} />} */}
 			{currentCar && <CarPanel
 				adminMode={adminMode}
 				currentCar={currentCar}
 				setCurrentCar={setCurrentCar}
+				selectedColor={selectedColor}
+				setSelectedColor={setSelectedColor}
 				brandModels={brandModels}
 				setBrandModels={setBrandModels}
-				isConfiguring={isConfiguring}
+				setSelectedBrand={setSelectedBrand}
 				setIsConfiguring={setIsConfiguring}
-				appearanceMode={appearanceMode}
-				setAppearanceMode={setAppearanceMode} />}
+				setAppearanceMode={setAppearanceMode}
+				createOrder={createOrder} />}
+
 			{isConfiguring &&
 				<CarComplectationTabs
 					adminMode={adminMode}
 					currentCar={currentCar}
 					setCurrentCar={setCurrentCar}
 					brandModels={brandModels}
-					setBrandModels={setBrandModels} />}
+					selectedComplectIndex={selectedComplectIndex}
+					setSelectedComplectIndex={setSelectedComplectIndex} />}
+
 			{appearanceMode &&
 				<AppearanceEditor
 					adminMode={adminMode}
 					currentCar={currentCar}
 					setCurrentCar={setCurrentCar}
 					brandModels={brandModels}
-					setBrandModels={setBrandModels}
 					appearanceColors={appearanceColors}
 					setAppearanceColors={setAppearanceColors} />}
-			{adminMode &&
+
+			{(adminMode && currentCar._id) &&
 				<AdminExtensions />}
-			{/* <CarFeaturesBlock /> */}
 		</div>
 	);
 };

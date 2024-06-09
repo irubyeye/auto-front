@@ -67,17 +67,17 @@ const dictionary = {
 		en: "Price",
 		ua: "Ціна"
 	},
-	key: {
-		en: "",
-		ua: ""
+	features: {
+		en: "Additional features",
+		ua: "Додаткові опції"
 	},
-	key: {
-		en: "",
-		ua: ""
+	install: {
+		en: "Install",
+		ua: "Встановити"
 	},
-	key: {
-		en: "",
-		ua: ""
+	uninstall: {
+		en: "Uninstall",
+		ua: "Демонтувати"
 	},
 	key: {
 		en: "",

@@ -15,10 +15,15 @@ module.exports = {
           '0%': { height: '0' },
           '100%': { height: 'var(--radix-accordion-content-height)' }
         },
+        slideFromRight: {
+          '0%': { transform: "translateX(200%)" },
+          '100%': { transform: 'translateX(0)' }
+        },
       },
       animation: {
         'slideUp': 'slideUp 300ms cubic-bezier(0.87, 0, 0.13, 1)',
         'slideDown': 'slideDown 300ms cubic-bezier(0.87, 0, 0.13, 1)',
+        'slideFromRight': 'slideFromRight 500ms cubic-bezier(0.16, 1, 0.3, 1)',
       }
     },
   },

@@ -4,25 +4,29 @@ import * as Form from '@radix-ui/react-form';
 import * as Select from '@radix-ui/react-select';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import * as RadioGroup from '@radix-ui/react-radio-group';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
-
+import * as Popover from '@radix-ui/react-popover';
+import { BookmarkFilledIcon, BookmarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross1Icon } from '@radix-ui/react-icons';
 import { useFetching } from '../../hooks/useFetching';
 import Input from '../../UI/Input';
 import Button from '../../UI/Button';
-import { LangContext, servURLContext } from '../../context';
+import { LangContext, servURLContext, UserContext, userAuthContext, toastNotificationContext } from '../../context';
 import dictionary from './dictionary';
 import schemas from '../../utils/schemas';
 
-const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModels, setBrandModels }) => {
+const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModels, selectedComplectIndex, setSelectedComplectIndex }) => {
 	const [complectations, setComplectations] = useState([]);
 	const [availableEngines, setAvailableEngines] = useState([]);
 	const [availableTransmissions, setAvailableTransmissions] = useState([]);
 	const [availableSuspensions, setAvailableSuspensions] = useState([]);
+	const [showCustomComplectNamePopover, setShowCustomComplectNamePopover] = useState(false);
+	const { setIsAuthDialogOpen } = useContext(userAuthContext);
 	const { language } = useContext(LangContext);
 	const { servURL } = useContext(servURLContext);
+	const { user, setUser } = useContext(UserContext);
+	const { setToast } = useContext(toastNotificationContext);
 	let isLoaded = false;
 
-	const [fetchDocument, isFetching, fetchError, setFetchError] = useFetching(async endpoint => {
+	const [fetchDocument] = useFetching(async endpoint => {
 		let data = await fetch(servURL + endpoint, {
 			method: 'GET',
 			headers: {
@@ -33,7 +37,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 		return data;
 	});
 
-	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {
@@ -54,21 +58,22 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 			const newTransmissions = await fetchDocument(`transmissions/getAvailable?id=${currentCar._id}`);
 			const newSuspensions = await fetchDocument(`suspensions/getAvailable?id=${currentCar._id}`);
 
-			setComplectations(newComplects);
 			setAvailableEngines(newEngines);
 			setAvailableTransmissions(newTransmissions);
 			setAvailableSuspensions(newSuspensions);
 
+			const userComplects = user?.savedComplects?.filter(complect => complect.baseModel?.some(id => id === currentCar._id));
+			if (userComplects?.length) newComplects.push(...userComplects);
 
-			if (adminMode) setComplectations(prev => {
-				const tmp = [...prev];
-				tmp.push(schemas.complectation);
-				tmp[tmp.length - 1].baseModel = [currentCar?._id];
-				tmp[tmp.length - 1].engine.availableFor = [currentCar?._id];
-				tmp[tmp.length - 1].transmission.availableFor = [currentCar?._id];
-				tmp[tmp.length - 1].suspension.availableFor = [currentCar?._id];
-				return tmp
-			});
+			if (adminMode) {
+				newComplects.push(schemas.complectation);
+				newComplects[newComplects.length - 1].baseModel = [currentCar?._id];
+				newComplects[newComplects.length - 1].engine.availableFor = [currentCar?._id];
+				newComplects[newComplects.length - 1].transmission.availableFor = [currentCar?._id];
+				newComplects[newComplects.length - 1].suspension.availableFor = [currentCar?._id];
+			}
+
+			setComplectations(newComplects);
 
 			setCurrentCar(prev => {
 				const tmp = { ...prev };
@@ -77,7 +82,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 			})
 			isLoaded = true;
 		})();
-	}, [currentCar._id]);
+	}, [currentCar._id, user.savedComplects?.length]);
 
 	const SelectItem = React.forwardRef(({ children, className, ...props }, forwardedRef) => {
 		return (
@@ -90,7 +95,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 		);
 	});
 
-	const MySelect = React.forwardRef(({ value, name, complectIndex, field, selectHandler, items, setItems, defaultItems, filter, className, ...props }, forwardedRef) => {
+	const MySelect = React.forwardRef(({ value, name, complectIndex, field = null, items, setItems, defaultItems, filter, className, ...props }, forwardedRef) => {
 		return <Select.Root value={value} onValueChange={value => handleSelect(value, items, setItems, complectIndex, name, field)} {...props} ref={forwardedRef}>
 			<Select.Trigger className={`inline-flex items-center justify-center gap-1 px-1 bg-slate-100 dark:bg-zinc-700 dark:text-orange-400 shadow-xl rounded border-2 border-solid border-slate-400 dark:border-zinc-500 ${className}`} aria-label="car-body-select-trigger">
 				<Select.Value className='' placeholder={dictionary[name][language]} />
@@ -110,12 +115,22 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 							<Select.Separator className="h-px bg-violet-500 m-1" />
 							{items?.length ?
 								items.map(item => {
-									return <SelectItem value={item._id} key={`car-${item._id}`}>
+									let className = null;
+									if (
+										(name === 'baseModel' && complectations[complectIndex][name].some(id => id === item._id))
+										||
+										(field && complectations[complectIndex][name][field]?.some(id => id === item._id))
+									) {
+										className = "!bg-green-400 dark:!bg-green-800 dark:!text-orange-400 dark:font-semibold";
+									}
+
+									return <SelectItem className={className} value={item._id} key={`car-${item._id}`}>
 										{Object.entries(item)
 											.filter(filter)
 											.map(([partName, partValue]) => `${partName}: ${partValue}, `)}
 									</SelectItem>
 								}) :
+								/* placeholder */
 								<SelectItem disabled value={defaultItems._id}>{
 									Object.entries(defaultItems)
 										.filter(filter)
@@ -132,58 +147,59 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 	})
 
 	const pushComplect = async (complect, index, endpoint, method) => {
-		const res = await pushDocument(complect, endpoint, method);
-		console.log(res);
-		if (method === "PATCH") return;
+		const complectToPush = { ...complect };
+		if (typeof complectToPush.engine !== 'string') complectToPush.engine = complectToPush.engine._id;
+		if (typeof complectToPush.transmission !== 'string') complectToPush.transmission = complectToPush.transmission._id;
+		if (typeof complectToPush.suspension !== 'string') complectToPush.suspension = complectToPush.suspension._id;
+		const res = await pushDocument(complectToPush, endpoint, method);
+		if (res.errors) {
+			return setToast({ title: res.errors.errors[0].msg })
+		} else {
+			setToast({ title: "Success" });
+		};
+		const tmp = [...complectations];
+		if (method === 'POST') {
+			tmp[tmp.length - 1] = res;
+			tmp.push(schemas.complectation);
+		}
+		if (method === "DELETE") tmp.splice(index, 1);
+		if (!tmp.length) {
+			tmp.push(schemas.complectation);
+			tmp[tmp.length - 1].baseModel = [currentCar?._id];
+			tmp[tmp.length - 1].engine.availableFor = [currentCar?._id];
+			tmp[tmp.length - 1].transmission.availableFor = [currentCar?._id];
+			tmp[tmp.length - 1].suspension.availableFor = [currentCar?._id];
+		}
 
-		setComplectations(prev => {
-			const tmp = [...prev];
-
-			method === 'POST' ?
-				// вставляем комплектацию на предпоследнее место (последнее под NewComplect)
-				// в devMode рендерится 2 newComplect, поэтому новая вставится между ними
-				tmp.splice(tmp.length - 2, 0, res) :
-				// или соответственно удаляем текущую комплектацию по индексу
-				tmp.splice(index, 1);
-
-			return tmp
-		})
+		setComplectations(tmp);
+		setCurrentCar(prev => ({ ...prev, complectations: tmp }));
 	}
 
 	const pushDetail = async (detail, endpoint, method, complectIndex, path, availableDetails, setAvailableDetails) => {
 		const res = await pushDocument(detail, endpoint, method);
+		const tempComplects = [...complectations];
 
-		if (method !== "PATCH") {
-			setComplectations(prev => {
-				const tmp = [...prev];
-				method === "DELETE" ?
-					tmp[complectIndex][path] = availableDetails[0] || schemas[path] :
-					tmp[complectIndex][path] = res;
-
-				return tmp;
-			})
-
-			// нужно ли обновлять комплектации внутри машины из бд?
-			// setCurrentCar(prev => {
-			// 	const tmp = prev.complectations;
-			// 	method === "DELETE" ? tmp[complectIndex][path] = availableDetails[0] || schemas[path] : tmp[complectIndex][path] = res;
-			// 	return {
-			// 		...prev,
-			// 		complectations: tmp
-			// 	}
-			// });
+		if (res.errors) {
+			return setToast({ title: res.errors.errors[0].msg })
+		} else {
+			setToast({ title: "Success" });
 		}
 
+		if (method === "DELETE") tempComplects[complectIndex][path] = availableDetails[0] || schemas.complectation[path];
+		// if (method === "POST") tempComplects[complectIndex][path] = res
+
+		setComplectations(tempComplects);
+		setCurrentCar(prev => ({ ...prev, complectations: tempComplects }));
 		setAvailableDetails(prev => {
+			const tmp = [...prev];
 			if (method === "DELETE") {
-				return prev.filter(item => item?._id !== detail?._id)
+				return tmp.filter(item => item?._id !== detail?._id)
 			} else if (method === "PATCH") {
-				const targetIndex = prev.findIndex(item => item._id === res._id);
-				prev[targetIndex] = res;
-				return prev
+				const targetIndex = tmp.findIndex(item => item?._id === detail?._id);
+				tmp[targetIndex] = detail;
+				return tmp;
 			} else {
-				// returns new array with added detail in the end
-				return prev.toSpliced(prev.length, Infinity, res);
+				return [...tmp, res];
 			}
 		})
 	}
@@ -226,7 +242,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 		// if path = выбор доступной машины для соотв. детали (select элементы с пропсом path рендерятся только в adminMode)
 		// idList = availableFor
 		const idList = tmp[complectIndex][key][path];
-		targetIndex = idList.findIndex(id => id == value);
+		targetIndex = idList.findIndex(id => id === value);
 
 		targetIndex >= 0 ?
 			idList.splice(targetIndex, 1) :
@@ -291,11 +307,12 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 	}
 
 	const setDetailBlock = (complectIndex, key, availableParts, setAvailableParts) => {
-		return <div className='flex flex-col my-3 rounded border-2 border-slate-400'>
+		return <div className='flex flex-col my-3 rounded border-2 border-slate-400' key={`complect-${complectIndex}-${key}-block`}>
 			<p className='py-2 text-center bg-blue-300 dark:bg-orange-400'>{dictionary[key][language]}</p>
-			{/* select from all available details from set */}
+			{/* available details */}
 			<MySelect
 				value={complectations[complectIndex][key]?._id}
+				// value={availableParts.find(part => part._id === complectations[complectIndex][key]?._id)?._id}
 				name={key}
 				complectIndex={complectIndex}
 				items={availableParts}
@@ -303,14 +320,11 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 				defaultItems={complectations[complectIndex]?.[key] || schemas[key]}
 				filter={property => property[0] !== "_id" && property[0] !== "availableFor"}
 			/>
-
-			{/* fields for all properties of specifyed detail */}
 			<div className='flex flex-wrap gap-4 p-4'>
 				{Object.entries(schemas.complectation[key])
 					.filter(entry => entry[0] !== "_id" && entry[0] !== "__v")
 					.map(([field, value], fieldIndex) => {
 						switch (field) {
-
 							case "availableFor":
 								if (adminMode) return <div className='' key={`${key}-availableFor-section`}>
 									<span className='font-semibold'>{dictionary[field][language]}</span>
@@ -342,10 +356,10 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 										filter={property => property[0] === "brand" || property[0] === "model" || property[0] === "body" || property[0] === "modelYear"}
 									/>
 								</div>
-								break;
+								return null;
 
 							case "turbo":
-								return <div className=''>
+								return <div className='' key={`field-${key}-${field}-${complectIndex}-${fieldIndex}`}>
 									<span className='mb-3 self-center font-semibold dark:text-zinc-400'>{dictionary[field][language]}</span>
 									<RadioGroup.Root onValueChange={value => handleEngineTurbo(value, complectIndex)} className="flex gap-4" value={complectations[complectIndex]?.engine?.turbo || false} aria-label="engine-turbo-tuning">
 										<div className='flex items-center'>
@@ -371,8 +385,8 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 											callback={event => setProperty(event, complectIndex, key, field)}
 											name={field}
 											key={`input-${key}-${field}-${complectIndex}-${fieldIndex}`}
-											type={typeof complectations[complectIndex]?.[key]?.[field] || typeof schemas[key][field]}
-											value={complectations[complectIndex]?.[key]?.[field] || schemas[key][field]}
+											type={typeof complectations[complectIndex]?.[key]?.[field] || typeof schemas.complectation[key][field]}
+											value={complectations[complectIndex]?.[key]?.[field] || schemas.complectation[key][field]}
 											disabled={!adminMode}
 										/>
 									</Form.Control>
@@ -396,7 +410,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 	}
 
 	const setDescriptionField = (complectIndex, lang) => {
-		return <Form.Field className='flex flex-col gap-x-2' name="complect-description">
+		return <Form.Field className='flex flex-col gap-x-2' name="complect-description" key={`complect-${complectIndex}-description`}>
 			<Form.Label className='pb-2 dark:text-zinc-400 dark:font-semibold'>{dictionary.description[lang]}</Form.Label>
 			<Form.Control asChild>
 				<textarea
@@ -416,20 +430,79 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 		</Form.Field>
 	}
 
+	const userSaveComplect = async (complect, newValue) => {
+		if (!user._id) return setIsAuthDialogOpen(true);
+		const tmpUser = { ...user };
+		const tmpComplect = { ...complect };
+		tmpComplect.name = newValue.length ? newValue : "MyComplect";
+		tmpUser.savedComplects.push(tmpComplect);
+		const updRes = await pushDocument(tmpUser, 'users/update', 'PATCH');
+		setUser(tmpUser);
+		// setComplectations(prev => [...prev, tmpComplect]);
+		setCurrentCar(prev => {
+			const tmp = { ...prev };
+			tmp.complectations.push(tmpComplect);
+			return tmp;
+		});
+	}
+
+	const userDeleteComplect = async (id, index) => {
+		const tmpUser = { ...user };
+		const targetIndex = tmpUser.savedComplects.findIndex(complect => complect._id === id)
+		tmpUser.savedComplects.splice(targetIndex, 1);
+		const updRes = await pushDocument(tmpUser, 'users/update', 'PATCH');
+		setComplectations(prev => {
+			const tmp = [...prev];
+			tmp.splice(index, 1);
+			return tmp;
+		});
+		setCurrentCar(prev => {
+			const tmp = { ...prev };
+			tmp.complectations.splice(index);
+			return tmp;
+		});
+		setUser(tmpUser);
+		setSelectedComplectIndex(0);
+	}
+
 	return (
-		<Tabs.Root className="" defaultValue="complect0">
+		<Tabs.Root className="" value={`complect${selectedComplectIndex}`} /* defaultValue="complect0" */>
 			<Tabs.List className='border-y-2 border-solid border-slate-400'>
 				<span className='px-4 py-2 select-none dark:text-orange-400'>{dictionary.complectInstruction[language]}</span>
 				{complectations.map((complect, index) => (
 					<Tabs.Trigger
 						className='px-4 py-2 select-none hover:bg-blue-300 dark:hover:bg-zinc-600 dark:text-orange-400 data-[state=active]:bg-blue-300 data-[state=active]:dark:bg-orange-500 data-[state=active]:dark:text-slate-700 data-[state=active]:hover:bg-blue-400 dark:data-[state=active]:hover:bg-orange-600'
 						value={`complect${index}`}
+						onClick={() => setSelectedComplectIndex(index)}
 						key={`tabs-nav-${index}`}>{complect.name}</Tabs.Trigger>
 				))}
 			</Tabs.List>
 
 			{complectations.map((complect, complectIndex) => {
-				return <Tabs.Content className='p-4' value={`complect${complectIndex}`} key={`tab-${complectIndex}`}>
+				const userComplects = user?.savedComplects?.filter(complect => complect.baseModel?.some(id => id === currentCar._id));
+				return <Tabs.Content className='p-4 relative' value={`complect${complectIndex}`} key={`tab-${complectIndex}`}>
+					{!userComplects?.some(userComplect => userComplect.name === complect.name) ?
+						// <BookmarkIcon onClick={() => userSaveComplect(complect, complectIndex)} className='size-7 absolute top-3 right-5 text-slate-500 dark:text-orange-400 duration-100 hover:scale-110 hover:cursor-pointer' /> :
+						<Popover.Root open={showCustomComplectNamePopover}>
+							<Popover.Anchor className="">
+								<Popover.Trigger onClick={() => setShowCustomComplectNamePopover(true)}>
+									<BookmarkIcon className='size-7 absolute top-3 right-5 text-slate-500 dark:text-orange-400 duration-100 hover:scale-110 hover:cursor-pointer' />
+								</Popover.Trigger>
+							</Popover.Anchor>
+							<Popover.Portal>
+								<Popover.Content className='rounded p-4 bg-slate-300 border-2 border-slate-500 dark:border-orange-400 dark:bg-zinc-700 z-20'>
+									<Popover.Close asChild><Cross1Icon onClick={() => setShowCustomComplectNamePopover(false)} className='text-slate-700 dark:text-orange-400 float-right' /></Popover.Close>
+									<Popover.Arrow className='fill-slate-100' />
+									<label className='dark:text-orange-400' htmlFor={`saved-complect-name-input-${complectIndex}`}>{dictionary.userComplectName[language]}</label>
+									<Input placeholder="MyComplect" id={`saved-complect-name-input-${complectIndex}`} />
+									<Button callback={event => {
+										userSaveComplect(complect, complectIndex, event.target.previousElementSibling.value);
+										setShowCustomComplectNamePopover(false);
+									}}>{dictionary.save[language]}</Button>
+								</Popover.Content>
+							</Popover.Portal>
+						</Popover.Root> :
+						<BookmarkFilledIcon onClick={() => userDeleteComplect(complect._id, complectIndex)} className='size-7 absolute top-3 right-5 text-slate-500 dark:text-orange-400 duration-100 hover:scale-110 hover:cursor-pointer' />}
 					<Form.Root className='flex flex-col gap-y-4 rounded-md shadow' key={`form-${complectIndex}`} >
 
 						{/* итерация по полям комплектаций */}
@@ -440,14 +513,14 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 								switch (key) {
 									case "description":
 										return adminMode ?
-											<div>
+											<div key={`complect-${complectIndex}-description-block`}>
 												{setDescriptionField(complectIndex, "ua")}
 												{setDescriptionField(complectIndex, "en")}
 											</div> :
 											setDescriptionField(complectIndex, language)
 
 									case "baseModel":
-										return <div className=''>
+										return <div className='' key={`complect-${complectIndex}-baseModel-block`}>
 											<div className='flex py-2'>
 												<span className='font-semibold pr-6'>{dictionary.baseModel[language]}</span>
 												<Checkbox.Root
@@ -469,9 +542,8 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 												name={key}
 												complectIndex={complectIndex}
 												items={brandModels}
-												setItems={setBrandModels}
 												defaultItems={currentCar}
-												filter={property => property[0] === "brand" || property[0] === "model" || property[0] === "body" || property[0] === "modelYear"}
+												filter={property => property[0] === "model"}
 												className="w-full"
 											/>
 										</div>
@@ -502,7 +574,7 @@ const CarComplectationTabs = ({ adminMode, currentCar, setCurrentCar, brandModel
 							})}
 
 						{adminMode && <div className='flex flex-wrap justify-center gap-5'>
-							<Button callback={() => pushComplect(complect, complectIndex, "complectations/add", "POST")}>Save complect</Button>
+							<Button callback={() => pushComplect(complect, complectIndex, "complectations/add", "POST")}>Add complect</Button>
 							<Button callback={() => pushComplect(complect, complectIndex, "complectations/update", "PATCH")}>Update complect</Button>
 							<Button callback={() => pushComplect(complect, complectIndex, "complectations/delete", "DELETE")}>Delete complect</Button>
 						</div>}

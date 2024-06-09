@@ -1,7 +1,7 @@
 const dictionary = {
 	colorLabel: {
-		en: "New color:",
-		ua: "Новий колір:"
+		en: "New color (en/ua):",
+		ua: "Новий колір (en/ua):"
 	},
 	srcset: {
 		en: "Enter picture URL's separated by comma",

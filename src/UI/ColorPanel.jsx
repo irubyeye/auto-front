@@ -41,7 +41,7 @@ const ColorPanel = ({ adminMode, category, slot, providedColors, appearanceColor
 			<div onClick={e => { e.target.dataset.visible = "false"; e.target.nextElementSibling.dataset.visible = "false" }} className='invisible fixed z-20 bg-transparent top-0 left-0 w-full h-full data-[visible=true]:visible' data-visible="false"></div>
 			{/* colors-pop-up */}
 			<div className='invisible flex flex-wrap gap-2 absolute top-[-55%] left-[-55%] w-24 h-24 p-1 rounded-lg z-20 bg-slate-200 dark:bg-zinc-600 overflow-y-auto custom-scrollbar border-2 border-slate-400 dark:border-zinc-400 data-[visible=true]:visible' id={category + "-" + slot + "-colors"} data-visible="false">
-				{colors.map((color, index) => <Input onClick={handleClick} value={color} draggable onDragEnd={event => handleDrag(event, index)} callback={event => handleInput(event, index)} className={`!px-0 !w-7 duration-75 hover:scale-110 hover:cursor-pointer ${color === appearanceColors?.[slot] ? "!bg-orange-400" : "bg-transparent"}`} data-selected="false" key={category + "-" + slot + "-color-" + index} type="color" />)}
+				{colors.map((color, index) => <Input onClick={handleClick} value={color} draggable onDragEnd={event => handleDrag(event, index)} callback={event => handleInput(event, index)} className={`!px-0 !w-7 duration-75 hover:scale-110 hover:cursor-pointer ${color === appearanceColors?.[slot] ? "!bg-green-600" : "bg-transparent"}`} data-selected="false" key={category + "-" + slot + "-color-" + index} type="color" />)}
 			</div>
 		</div>
 	);
