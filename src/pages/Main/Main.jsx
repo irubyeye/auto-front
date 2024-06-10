@@ -38,7 +38,7 @@ const Mainpage = () => {
 		return data;
 	});
 
-	const [pushDocument, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {

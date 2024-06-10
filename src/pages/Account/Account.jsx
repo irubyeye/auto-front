@@ -186,7 +186,7 @@ const Account = () => {
 			<div className="flex gap-4">
 				<Button callback={() => cancelOrder(index, order)}>{dictionary.cancel[language]}</Button>
 				{user.roles.some(role => role === 'admin') &&
-					<Button callback={() => approveOrder(order)}>Approve</Button>
+					<Button callback={() => approveOrder(order)}>{dictionary.approve[language]}</Button>
 				}
 				<Button callback={() => deleteOrder(index, order._id)}>{dictionary.delete[language]}</Button>
 			</div>
@@ -197,7 +197,11 @@ const Account = () => {
 		<div className='flex flex-col'>
 			<h2 className="text-xl dark:text-orange-400">{`${user.username}'s Account`}</h2>
 			{orders.length ? <div className=''>
-				<h3 className="text-lg dark:text-orange-400">{dictionary.orders[language]}</h3>
+				<h3 className="text-lg dark:text-orange-400">{
+					user.roles.some(role => role === 'admin') ?
+						dictionary.pendingOrders[language] :
+						dictionary.orders[language]
+				}</h3>
 				<div className='p-5 bg-slate-400 dark:bg-zinc-900 rounded max-h-[70vh] overflow-x-auto custom-scrollbar'>
 					{orders.map((order, index) => {
 						return <OrderComponent order={order} index={index} />

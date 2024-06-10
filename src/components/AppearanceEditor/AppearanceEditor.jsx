@@ -32,7 +32,7 @@ const AppearanceEditor = ({ adminMode, currentCar, setCurrentCar, appearanceColo
 		return data;
 	});
 
-	const [pushDocument, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {

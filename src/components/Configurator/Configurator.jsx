@@ -17,7 +17,7 @@ const Configurator = ({ currentCar, setCurrentCar, selectedColor, setSelectedCol
 	const { language } = useContext(LangContext);
 	const colorField = useRef(null);
 
-	const [pushDocument, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {

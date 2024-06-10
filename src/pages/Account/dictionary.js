@@ -3,6 +3,10 @@ const dictionary = {
 		en: "Your orders",
 		ua: "Ваші замовлення"
 	},
+	pendingOrders: {
+		en: "Pending orders",
+		ua: "Замовлення, що очікують підтвердження"
+	},
 	totalPrice: {
 		en: "Total Price",
 		ua: "Загальна ціна"
@@ -134,6 +138,10 @@ const dictionary = {
 	color: {
 		en: "Color",
 		ua: "Колір"
+	},
+	approve: {
+		en: "Approve",
+		ua: "Підтвердити"
 	},
 	delete: {
 		en: "Delete",

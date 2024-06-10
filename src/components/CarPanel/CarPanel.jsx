@@ -67,7 +67,7 @@ const CarPanel = ({ adminMode, currentCar, setCurrentCar, selectedColor, setSele
 		</Select.Root>
 	})
 
-	const [pushDocument, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
+	const [pushDocument, isPushing, pushError, setPushError] = useFetching(async (document, endpoint, method) => {
 		let res = await fetch(servURL + endpoint, {
 			method: method,
 			headers: {
